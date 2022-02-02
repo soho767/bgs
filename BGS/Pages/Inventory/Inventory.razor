@@ -1,0 +1,215 @@
+﻿@page "/inventory"
+@using Microsoft.EntityFrameworkCore
+@using QuickGrid
+@using BGS.Data
+@using System.Data.Common
+@inject DataSynchronizer DataSynchronizer
+@implements IDisposable
+
+<PageTitle>Inventory</PageTitle>
+@*<SyncStatus />*@
+@*<PartDetails Part="selectedPart" OnHide="@(() => { selectedPart = null; })" />*@
+
+@if (db is not null)
+{
+    <div>
+        <button @onclick="AddSomethingAsync">
+            Add something
+        </button>
+    </div>
+
+    <div class="inventory-grid">
+        <Grid Virtualize="true" Items="@GetFilteredParts()" ItemKey="@(x => x.PartId)" ItemSize="35">
+
+            <TemplateColumn Title="Category" SortBy="@(items => items.SortByAscending(x => x.Category).ThenAscending(x => x.SubCategory))" Class="col-category">
+                <ChildContent>@context.Category / @context.SubCategory</ChildContent>
+                <ColumnOptions>
+                    <p>Category (@categories.Length)</p>
+                    <select multiple class="w-64 bg-gray-100 border-grey-500 border my-4" @bind="categories" @onclick="@(() => subcategories = Array.Empty<string>())">
+                        @foreach (var name in db.Parts.Select(x => x.Category).Distinct())
+                        {
+                            <option>@name</option>
+                        }
+                    </select>
+
+                    <p>Subcategory (@subcategories.Length)</p>
+                    <select multiple class="w-64 bg-gray-100 border-grey-500 border my-4" @bind="subcategories">
+                        @foreach (var name in db.Parts.Where(x => categories.Contains(x.Category)).Select(x => x.SubCategory).Distinct())
+                        {
+                            <option>@name</option>
+                        }
+                    </select>
+
+                    <div><button class="bg-gray-200 px-5 py-1 mb-2" @onclick="@(() => { categories = Array.Empty<string>(); subcategories = Array.Empty<string>(); })">Reset</button></div>
+                </ColumnOptions>
+            </TemplateColumn>
+
+            <PropertyColumn Title="Name" Property="@(x => x.Name)" Class="col-name" OnCellClicked="@((Part part) => { selectedPart = part; })">
+                <ColumnOptions>
+                    <input @bind="searchName" @bind:event="oninput" type="search" placeholder="Search..." />
+                </ColumnOptions>
+            </PropertyColumn>
+
+            <PropertyColumn Title="Location" Property="@(x => x.Location)" Class="col-location" />
+
+            <PropertyColumn Title="Stock" Property="@(x => x.Stock)" Format="N0" Align="Align.Right" Class="col-stock">
+                <ColumnOptions>
+                    <p>Min stock</p>
+                    <input type="range" @bind="minStock" @bind:event="oninput" min="0" max="50000" />
+                    <p>Max stock</p>
+                    <input type="range" @bind="maxStock" @bind:event="oninput" min="0" max="50000" />
+                </ColumnOptions>
+            </PropertyColumn>
+
+            <PropertyColumn Title="Cost ($)" Property="@(x => x.PriceCents/100)" Format="N0" Align="Align.Right" Class="col-cost" />
+
+        </Grid>
+        <div class="status-bar">
+            Showing @GetFilteredParts()?.Count().ToString("N0") items
+        </div>
+    </div>
+}
+
+@code {
+    ClientSideDbContext? db;
+
+    [Parameter] public string? SearchName { get; set; }
+
+    string[] categories = Array.Empty<string>();
+    string[] subcategories = Array.Empty<string>();
+    string searchName = string.Empty;
+    int minStock, maxStock = 50000;
+    Part? selectedPart;
+
+    IQueryable<Part>? GetFilteredParts()
+    {
+        if (db is null)
+        {
+            return null;
+        }
+
+        var result = db.Parts.AsNoTracking().AsQueryable();
+        if (categories.Any())
+        {
+            result = result.Where(x => categories.Contains(x.Category));
+        }
+        if (subcategories.Any())
+        {
+            result = result.Where(x => subcategories.Contains(x.SubCategory));
+        }
+        if (!string.IsNullOrEmpty(searchName))
+        {
+            result = result.Where(x => EF.Functions.Like(x.Name, searchName.Replace("%", "\\%") + "%", "\\"));
+        }
+        if (minStock > 0)
+        {
+            result = result.Where(x => x.Stock >= minStock);
+        }
+        if (maxStock < 50000)
+        {
+            result = result.Where(x => x.Stock <= maxStock);
+        }
+
+        return result;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        db = await DataSynchronizer.GetPreparedDbContextAsync();
+        DataSynchronizer.OnUpdate += StateHasChanged;
+    }
+
+    protected async Task AddSomethingAsync()
+    {
+        if (db is null)
+        {
+            return;
+        }
+
+        try { 
+
+        
+        var connection = db.Database.GetDbConnection();
+        connection.Open();
+
+        List<Part> dummyParts = new List<Part>();
+
+        dummyParts.Add(new Part()
+        {
+            PartId = new Random().Next(1, 10000000),
+            Category = "ABC",
+            Location = "Home",
+            ModifiedTicks = 1000,
+            Name = "Alfred",
+            PriceCents = new Random().Next(100, 10000),
+            Stock = 1,
+            SubCategory = "AA"
+        });
+
+        BulkInsert(connection, dummyParts);
+        
+        }
+        catch (Exception ex)
+        {
+            // TODO: use logger also
+            
+        }
+        
+    }
+
+    private void BulkInsert(DbConnection connection, IEnumerable<Part> parts)
+    {
+        // Since we're inserting so much data, we can save a huge amount of time by dropping down below EF Core and
+        // using the fastest bulk insertion technique for Sqlite.
+        using (var transaction = connection.BeginTransaction())
+        {
+            var command = connection.CreateCommand();
+            var partId = AddNamedParameter(command, "$PartId");
+            var category = AddNamedParameter(command, "$Category");
+            var subcategory = AddNamedParameter(command, "$SubCategory");
+            var name = AddNamedParameter(command, "$Name");
+            var location = AddNamedParameter(command, "$Location");
+            var stock = AddNamedParameter(command, "$Stock");
+            var priceCents = AddNamedParameter(command, "$PriceCents");
+            var modifiedTicks = AddNamedParameter(command, "$ModifiedTicks");
+
+            command.CommandText =
+                $"INSERT INTO Parts (PartId, Category, Subcategory, Name, Location, Stock, PriceCents, ModifiedTicks) " +
+                $"VALUES ({partId.ParameterName}, {category.ParameterName}, {subcategory.ParameterName}, {name.ParameterName}, {location.ParameterName}, {stock.ParameterName}, {priceCents.ParameterName}, {modifiedTicks.ParameterName})";
+
+            foreach (var part in parts)
+            {
+                partId.Value = part.PartId;
+                category.Value = part.Category;
+                subcategory.Value = part.SubCategory;
+                name.Value = part.Name;
+                location.Value = part.Location;
+                stock.Value = part.Stock;
+                priceCents.Value = part.PriceCents;
+                modifiedTicks.Value = part.ModifiedTicks;
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+
+        static DbParameter AddNamedParameter(DbCommand command, string name)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            command.Parameters.Add(parameter);
+            return parameter;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        searchName = SearchName ?? string.Empty;
+    }
+
+    public void Dispose()
+    {
+        db?.Dispose();
+        DataSynchronizer.OnUpdate -= StateHasChanged;
+    }
+}

@@ -1,0 +1,107 @@
+﻿@page "/activity/create"
+
+@using BGS.Data
+@using BGS.Data.Entities
+@inject DataSynchronizer DataSynchronizer
+@implements IDisposable
+
+<PageTitle>Activity - Create</PageTitle>
+
+@if (db is not null)
+{
+    @* Create activity entry form *@
+
+    <EditForm Model="@activity" OnValidSubmit="@HandleValidActivitySubmit">
+
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <p>
+            <label>
+                Name:
+                <InputText @bind-Value="activity.Name" />
+            </label>
+        </p>
+        <p>
+            <label>
+                Date:
+                <InputDate @bind-Value="activity.Date" />
+            </label>
+        </p>
+
+        @* Player list *@
+        <button @onclick="AddPlayer">
+            Add Player
+        </button>
+
+        @{
+            void AddPlayer()
+            {
+                activity.Players.Add(new Player());
+            }
+        }
+
+        @foreach (var p in activity.Players)
+        {
+            <p>
+                <label>
+                    Playername:
+                    <InputText @bind-Value="p.Name" />
+                </label>
+            </p>
+        }
+
+        <button type="submit">Submit</button>
+    </EditForm>
+
+
+}
+
+@code {
+    ClientSideDbContext? db;
+
+    Activity activity = new Activity();
+
+    protected override async Task OnInitializedAsync()
+    {
+        db = await DataSynchronizer.GetPreparedDbContextAsync();
+        DataSynchronizer.OnUpdate += StateHasChanged;
+
+        //add 4 players
+        activity.Players.Add(new Player());
+        activity.Players.Add(new Player());
+        activity.Players.Add(new Player());
+        activity.Players.Add(new Player());
+    }
+
+    public void Dispose()
+    {
+        db?.Dispose();
+        DataSynchronizer.OnUpdate -= StateHasChanged;
+    }
+
+    private void HandleValidActivitySubmit()
+    {
+        //Logger.LogInformation("HandleValidSubmit called");
+
+        if (db == null)
+            return;
+
+        // Process the valid form
+        try
+        {
+            db.Activities.Add(activity);
+            db.SaveChanges();
+
+            //TODO show success message
+
+            //create new object
+            activity = new Activity();
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+}

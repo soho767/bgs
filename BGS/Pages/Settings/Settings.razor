@@ -1,0 +1,37 @@
+﻿@page "/settings"
+
+@using System.IO
+@inject IJSRuntime JS
+@*@inject DataSynchronizer DataSynchronizer*@
+
+<h3>Settings</h3>
+
+<h4>Save database</h4>
+<button @onclick="DownloadFileFromStream">
+    Download File From Stream
+</button>
+
+
+<h4>Load database</h4>
+
+
+
+@code {
+    private async Task DownloadFileFromStream()
+    {
+        var fileName = Data.DataSynchronizer.SqliteDbFilename;
+
+        //MemoryStream ms = new MemoryStream();
+        using (FileStream file = new FileStream(fileName, FileMode.Open, FileAccess.Read))
+        {
+        //file.CopyTo(ms);
+
+            //var fileStream = GetFileStream();
+            //var fileName = Data.DataSynchronizer.SqliteDbFilename;
+
+        using var streamRef = new DotNetStreamReference(stream: file);
+
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+        }
+    }
+}

@@ -5,6 +5,7 @@
 @using BGS.Data
 @using System.Data.Common
 @inject DataSynchronizer DataSynchronizer
+@inject Microsoft.AspNetCore.Components.NavigationManager navigationManager
 @implements IDisposable
 
 <PageTitle>History</PageTitle>
@@ -13,75 +14,113 @@
 
 @if (db is not null)
 {
-    <div>
+    @*<div>
         <button @onclick="AddSomethingAsync">
             Add something
         </button>
-    </div>
+    </div>*@
 
     <div class="inventory-grid">
         <Grid Virtualize="true" Items="@GetFilteredParts()" ItemKey="@(x => x.Id)" ItemSize="35">
 
-             <PropertyColumn Title="Name" Property="@(x => x.Name)" Class="col-location" />
+            <TemplateColumn>
+                <ChildContent>
+                    <input type="button" value="x" @onclick="() => RemoveEntry(context.Id)" />
+                    @{
+                            void RemoveEntry(Guid id)
+                            {
+                                if (db is null)
+                                {
+                                    return;
+                                }
 
-             @*<TemplateColumn Title="Name" SortBy="@(items => items.SortByAscending(x => x.Name).ThenAscending(x => x.Date))" Class="col-category">
-                <ChildContent>@context.Name / @context.Date</ChildContent>
-               <ColumnOptions>
+                                var entry = db.Activities.Where(x => x.Id == id).FirstOrDefault();
+
+                                db.Activities.Remove(entry);
+
+                                db.SaveChanges();
+                            }
+                        }
+
+                        <input type="button" value="edit" @onclick="() => EditEntry(context.Id)" />
+
+                        @{
+                            void EditEntry(Guid id)
+                            {
+                                navigationManager.NavigateTo($"/activity/create/{context.Id}");
+                            }
+                        }
+
+                    </ChildContent>
+                </TemplateColumn>
+
+                <PropertyColumn Title="Name" Property="@(x => x.Name)" Class="col-location" />
+
+                @*<TemplateColumn Title="Name" SortBy="@(items => items.SortByAscending(x => x.Name).ThenAscending(x => x.Date))" Class="col-category">
+                    <ChildContent>@context.Name / @context.Date</ChildContent>
+                    <ColumnOptions>
                     <p>Category (@categories.Length)</p>
                     <select multiple class="w-64 bg-gray-100 border-grey-500 border my-4" @bind="categories" @onclick="@(() => subcategories = Array.Empty<string>())">
-                        @foreach (var name in db.Parts.Select(x => x.Category).Distinct())
-                            {
-                            <option>@name</option>
-                            }
+                    @foreach (var name in db.Parts.Select(x => x.Category).Distinct())
+                    {
+                    <option>@name</option>
+                    }
                     </select>
 
                     <p>Subcategory (@subcategories.Length)</p>
                     <select multiple class="w-64 bg-gray-100 border-grey-500 border my-4" @bind="subcategories">
-                        @foreach (var name in db.Parts.Where(x => categories.Contains(x.Category)).Select(x => x.SubCategory).Distinct())
-                            {
-                            <option>@name</option>
-                            }
+                    @foreach (var name in db.Parts.Where(x => categories.Contains(x.Category)).Select(x => x.SubCategory).Distinct())
+                    {
+                    <option>@name</option>
+                    }
                     </select>
 
                     <div><button class="bg-gray-200 px-5 py-1 mb-2" @onclick="@(() => { categories = Array.Empty<string>(); subcategories = Array.Empty<string>(); })">Reset</button></div>
-                </ColumnOptions>
-            </TemplateColumn>*@
+                    </ColumnOptions>
+                    </TemplateColumn>*@
 
-            <PropertyColumn Title="Date" Property="@(x => x.Date)" Class="col-name" OnCellClicked="@((Activity part) => { selectedPart = part; })">
-                <ColumnOptions>
-                    <input @bind="searchName" @bind:event="oninput" type="search" placeholder="Search..." />
-                </ColumnOptions>
-            </PropertyColumn>
+                <PropertyColumn Title="Date" Property="@(x => x.Date)" Class="col-name" OnCellClicked="@((Activity part) => { selectedPart = part; })">
+                    <ColumnOptions>
+                        <input @bind="searchName" @bind:event="oninput" type="search" placeholder="Search..." />
+                    </ColumnOptions>
+                </PropertyColumn>
 
-            <PropertyColumn Title="Place" Property="@(x => x.Place)" Class="col-location" />
+                <PropertyColumn Title="Place" Property="@(x => x.Place)" Class="col-location" />
 
                 <PropertyColumn Title="Start" Property="@(x => x.Start)" Class="col-location" />
-                    <PropertyColumn Title="Duration" Property="@(x => x.Duration)" Class="col-location" />
+                <PropertyColumn Title="Duration (Min.)" Property="@(x => x.DurationInMinutes)" Class="col-location" />
 
 
-            @*<PropertyColumn Title="Player" Property="@(x => x.Players)" Class="col-location" />*@
+                @*<PropertyColumn Title="Player" Property="@(x => x.Players)" Class="col-location" />*@
+
+
 
                 <TemplateColumn Title="Player" Class="col-category">
-                <ChildContent>@string.Join(", ",context.Players.Select(x => x.Name).ToList())</ChildContent>
+                    <ChildContent>
+                        @{
+                            var playerRanking = context.Players.OrderBy(x => x.Ranking).OrderByDescending(x => x.Points).Select(x => $"{x.Name} ({x.Ranking}, {x.Points})").ToList();
+                        }
+                        @string.Join(", ",playerRanking)
+                    </ChildContent>
                 </TemplateColumn>
-                
 
-           @* <PropertyColumn Title="Stock" Property="@(x => x.Stock)" Format="N0" Align="Align.Right" Class="col-stock">
-                <ColumnOptions>
+
+                @* <PropertyColumn Title="Stock" Property="@(x => x.Stock)" Format="N0" Align="Align.Right" Class="col-stock">
+                    <ColumnOptions>
                     <p>Min stock</p>
                     <input type="range" @bind="minStock" @bind:event="oninput" min="0" max="50000" />
                     <p>Max stock</p>
                     <input type="range" @bind="maxStock" @bind:event="oninput" min="0" max="50000" />
-                </ColumnOptions>
-            </PropertyColumn>
+                    </ColumnOptions>
+                    </PropertyColumn>
 
-            <PropertyColumn Title="Cost ($)" Property="@(x => x.PriceCents/100)" Format="N0" Align="Align.Right" Class="col-cost" />*@
+                    <PropertyColumn Title="Cost ($)" Property="@(x => x.PriceCents/100)" Format="N0" Align="Align.Right" Class="col-cost" />*@
 
-        </Grid>
-        <div class="status-bar">
-            Showing @GetFilteredParts()?.Count().ToString("N0") items
+            </Grid>
+            <div class="status-bar">
+                Showing @GetFilteredParts()?.Count().ToString("N0") items
+            </div>
         </div>
-    </div>
 }
 
 @code {
@@ -137,7 +176,7 @@
 
     private static Random random = new Random();
 
-    public static string RandomString(int length)
+    private static string RandomString(int length)
     {
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         return new string(Enumerable.Repeat(chars, length)
@@ -153,8 +192,6 @@
 
         try
         {
-
-
             var connection = db.Database.GetDbConnection();
             connection.Open();
 
@@ -166,7 +203,7 @@
                     Date = DateOnly.FromDateTime(DateTime.Now),
                     Name = RandomString(10),
                     Start = TimeOnly.FromDateTime(DateTime.Now),
-                    Duration = TimeSpan.FromMinutes(90),
+                    DurationInMinutes = (int)TimeSpan.FromMinutes(90).TotalMinutes,
                     Place = "@Home"
                 });
 
@@ -192,11 +229,11 @@
             var date = AddNamedParameter(command, "$Date");
             var name = AddNamedParameter(command, "$Name");
             var start = AddNamedParameter(command, "$Start");
-            var end = AddNamedParameter(command, "$Duration");
+            var end = AddNamedParameter(command, "$DurationInMinutes");
             var place = AddNamedParameter(command, "$Place");
 
             command.CommandText =
-                $"INSERT INTO Activities (Id, Date, Name, Start, Duration, Place) " +
+                $"INSERT INTO Activities (Id, Date, Name, Start, DurationInMinutes, Place) " +
                 $"VALUES ({id.ParameterName}, {date.ParameterName}, {name.ParameterName}, {start.ParameterName}, {end.ParameterName}, {place.ParameterName})";
 
             foreach (var part in parts)
@@ -205,7 +242,7 @@
                 date.Value = part.Date;
                 name.Value = part.Name;
                 start.Value = part.Start;
-                end.Value = part.Duration;
+                end.Value = part.DurationInMinutes;
                 place.Value = part.Place;
                 command.ExecuteNonQuery();
             }

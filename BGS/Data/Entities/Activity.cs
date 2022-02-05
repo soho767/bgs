@@ -29,7 +29,7 @@
 
         public TimeOnly? Start { get; set; }
 
-        public TimeSpan? Duration { get; set; }
+        public int? DurationInMinutes { get; set; }
 
         public string Place { get; set; }
 

@@ -1,7 +1,8 @@
-﻿@page "/activity/create"
+﻿@page "/activity/create/{Id:guid?}"
 
 @using BGS.Data
 @using BGS.Data.Entities
+@using Microsoft.EntityFrameworkCore
 @inject DataSynchronizer DataSynchronizer
 @implements IDisposable
 
@@ -28,16 +29,77 @@
                 <InputDate @bind-Value="activity.Date" />
             </label>
         </p>
+        <p>
+            <label>
+                Time start:
+                @*<input type="time" @bind-Value="activity.Start" />*@
+
+                <input type="time" min="0" max="600" @bind-value="@TimeProxy" />
+
+                @functions
+                {
+            DateTime TimeProxy
+        {
+                get
+                {
+                    if (activity.Start != null)
+                    {
+                        DateTime h = activity.Date.ToDateTime((TimeOnly)activity.Start);
+                        return h;
+                    }
+                    else
+                    {
+                        return activity.Date.ToDateTime(new TimeOnly(0, 0));
+                    }
+                }
+
+                set
+                {
+                    activity.Start = TimeOnly.FromTimeSpan(value.TimeOfDay);
+                }
+        }
+            }
+        </label>
+    </p>
+    <p>
+        <label>
+            Duration (Minutes):
+            <InputNumber @bind-Value="activity.DurationInMinutes" />
+        </label>
+    </p>
+    <p>
+        <label>
+            Stop time:
+            <input type="button" value="Stop time" @onclick="CalculateDuration" />
+
+            @{
+                    void CalculateDuration()
+                    {
+                        if (activity.Start != null)
+                        {
+                            activity.DurationInMinutes = (int)(DateTime.Now.TimeOfDay - activity.Start.Value.ToTimeSpan()).TotalMinutes;
+                        }
+                    }
+                }
+
+            </label>
+        </p>
+
+        <p>
+            <label>
+                Place:
+                <InputText @bind-Value="activity.Place" />
+            </label>
+        </p>
 
         @* Player list *@
-        <button @onclick="AddPlayer">
-            Add Player
-        </button>
+        <input type="button" value="Add player" @onclick="AddPlayer" />
 
         @{
             void AddPlayer()
             {
                 activity.Players.Add(new Player());
+
             }
         }
 
@@ -47,6 +109,24 @@
                 <label>
                     Playername:
                     <InputText @bind-Value="p.Name" />
+                </label>
+                <label>
+                    Points:
+                    <InputNumber @bind-Value="p.Points" />
+                </label>
+                <label>
+                    Ranking:
+                    <InputNumber @bind-Value="p.Ranking" />
+                </label>
+                <label>
+                    <input type="button" value="x" @onclick="() => RemovePlayer(p)" />
+
+                    @{
+            void RemovePlayer(Player p)
+            {
+                activity.Players.Remove(p);
+            }
+        }
                 </label>
             </p>
         }
@@ -58,6 +138,10 @@
 }
 
 @code {
+
+    //if edit, this is the id of the record
+    [Parameter] public Guid? Id { get; set; }
+
     ClientSideDbContext? db;
 
     Activity activity = new Activity();
@@ -67,11 +151,17 @@
         db = await DataSynchronizer.GetPreparedDbContextAsync();
         DataSynchronizer.OnUpdate += StateHasChanged;
 
-        //add 4 players
-        activity.Players.Add(new Player());
-        activity.Players.Add(new Player());
-        activity.Players.Add(new Player());
-        activity.Players.Add(new Player());
+        //Check if edit or create
+        if(Id == null || Id == Guid.Empty)
+        {
+            //add 1 player
+            activity.Players.Add(new Player());
+        }
+        else
+        {
+            //get record and set activity
+            activity = db.Activities.Include("Players").Where(x => x.Id == Id).FirstOrDefault() ?? new Activity();
+        }
     }
 
     public void Dispose()
@@ -90,7 +180,41 @@
         // Process the valid form
         try
         {
-            db.Activities.Add(activity);
+            if (Id == null || Id == Guid.Empty)
+            {
+
+                db.Activities.Add(activity);
+
+
+            }
+            else
+            {
+                //Update
+
+                //check players
+                if(activity.Players != null)
+                {
+                    foreach(var p in activity.Players)
+                    {
+                        var currentPlayer = db.Players.Where(x => x.Id == p.Id).FirstOrDefault();
+
+                        if(currentPlayer == null)
+                        {
+                            //add player
+                            db.Players.Add(p);
+                        }
+                        else
+                        {
+                            //update
+                            db.Players.Update(p);
+                        }
+                    }
+                    db.SaveChanges();
+                }
+
+                //activity.Players = null;
+                db.Activities.Update(activity);
+            }
             db.SaveChanges();
 
             //TODO show success message

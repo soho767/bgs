@@ -24,8 +24,8 @@ public static class ManufacturingDataServices
     }
 }
 
-//public class ManufacturingDataClientOptions
-//{
-//    public string? BaseUri { get; set; }
-//    public HttpMessageHandler? MessageHandler { get; set; }
-//}
+public class ManufacturingDataClientOptions
+{
+    public string? BaseUri { get; set; }
+    public HttpMessageHandler? MessageHandler { get; set; }
+}

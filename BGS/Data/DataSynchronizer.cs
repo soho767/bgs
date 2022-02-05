@@ -41,17 +41,17 @@ class DataSynchronizer
 
     private async Task FirstTimeSetupAsync(IJSRuntime js)
     {
-        //var module = await js.InvokeAsync<IJSObjectReference>("import", "./dbstorage.js");
+        var module = await js.InvokeAsync<IJSObjectReference>("import", "./dbstorage.js");
 
-        //if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("browser")))
-        //{
-        //    await module.InvokeVoidAsync("synchronizeFileWithIndexedDb", SqliteDbFilename);
-        //}
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("browser")))
+        {
+            await module.InvokeVoidAsync("synchronizeFileWithIndexedDb", SqliteDbFilename);
+        }
 
         using var db = await dbContextFactory.CreateDbContextAsync();
 
         //remove db
-        var x = await db.Database.EnsureDeletedAsync();
+        //var x = await db.Database.EnsureDeletedAsync();
 
         //var dbCreationScript = db.Database.GenerateCreateScript();
         
@@ -74,15 +74,15 @@ class DataSynchronizer
             SyncTotal = 0;
 
             // Get a DB context
-            using var db = await GetPreparedDbContextAsync();
-            db.ChangeTracker.AutoDetectChangesEnabled = false;
-            db.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            //using var db = await GetPreparedDbContextAsync();
+            //db.ChangeTracker.AutoDetectChangesEnabled = false;
+            //db.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
 
             // Begin fetching any updates to the dataset from the backend server
-            var mostRecentUpdate = db.Parts.OrderByDescending(p => p.ModifiedTicks).FirstOrDefault()?.ModifiedTicks;
+            //var mostRecentUpdate = db.Parts.OrderByDescending(p => p.ModifiedTicks).FirstOrDefault()?.ModifiedTicks;
 
-            var connection = db.Database.GetDbConnection();
-            connection.Open();
+            //var connection = db.Database.GetDbConnection();
+            //connection.Open();
 
             //while (true)
             //{
@@ -104,34 +104,34 @@ class DataSynchronizer
             //    }
             //}
 
-            List<Part> dummyParts = new List<Part>();
+            //List<Part> dummyParts = new List<Part>();
 
-            dummyParts.Add(new Part()
-            {
-                PartId = 1,
-                Category = "A",
-                Location = "Home",
-                ModifiedTicks = 1000,
-                Name = "Alfred",
-                PriceCents = 1000,
-                Stock = 1,
-                SubCategory = "AA"
-            });
+            //dummyParts.Add(new Part()
+            //{
+            //    PartId = 1,
+            //    Category = "A",
+            //    Location = "Home",
+            //    ModifiedTicks = 1000,
+            //    Name = "Alfred",
+            //    PriceCents = 1000,
+            //    Stock = 1,
+            //    SubCategory = "AA"
+            //});
 
-            dummyParts.Add(new Part()
-            {
-                PartId = 2,
-                Category = "B",
-                Location = "Home",
-                ModifiedTicks = 2000,
-                Name = "Bench",
-                PriceCents = 2000,
-                Stock = 2,
-                SubCategory = "BA"
-            });
+            //dummyParts.Add(new Part()
+            //{
+            //    PartId = 2,
+            //    Category = "B",
+            //    Location = "Home",
+            //    ModifiedTicks = 2000,
+            //    Name = "Bench",
+            //    PriceCents = 2000,
+            //    Stock = 2,
+            //    SubCategory = "BA"
+            //});
 
-            BulkInsert(connection, dummyParts);
-            OnUpdate?.Invoke();
+            //BulkInsert(connection, dummyParts);
+            //OnUpdate?.Invoke();
         }
         catch (Exception ex)
         {
@@ -144,48 +144,48 @@ class DataSynchronizer
         }
     }
 
-    private void BulkInsert(DbConnection connection, IEnumerable<Part> parts)
-    {
-        // Since we're inserting so much data, we can save a huge amount of time by dropping down below EF Core and
-        // using the fastest bulk insertion technique for Sqlite.
-        using (var transaction = connection.BeginTransaction())
-        {
-            var command = connection.CreateCommand();
-            var partId = AddNamedParameter(command, "$PartId");
-            var category = AddNamedParameter(command, "$Category");
-            var subcategory = AddNamedParameter(command, "$SubCategory");
-            var name = AddNamedParameter(command, "$Name");
-            var location = AddNamedParameter(command, "$Location");
-            var stock = AddNamedParameter(command, "$Stock");
-            var priceCents = AddNamedParameter(command, "$PriceCents");
-            var modifiedTicks = AddNamedParameter(command, "$ModifiedTicks");
+    //private void BulkInsert(DbConnection connection, IEnumerable<Part> parts)
+    //{
+    //    // Since we're inserting so much data, we can save a huge amount of time by dropping down below EF Core and
+    //    // using the fastest bulk insertion technique for Sqlite.
+    //    using (var transaction = connection.BeginTransaction())
+    //    {
+    //        var command = connection.CreateCommand();
+    //        var partId = AddNamedParameter(command, "$PartId");
+    //        var category = AddNamedParameter(command, "$Category");
+    //        var subcategory = AddNamedParameter(command, "$SubCategory");
+    //        var name = AddNamedParameter(command, "$Name");
+    //        var location = AddNamedParameter(command, "$Location");
+    //        var stock = AddNamedParameter(command, "$Stock");
+    //        var priceCents = AddNamedParameter(command, "$PriceCents");
+    //        var modifiedTicks = AddNamedParameter(command, "$ModifiedTicks");
 
-            command.CommandText =
-                $"INSERT OR REPLACE INTO Parts (PartId, Category, Subcategory, Name, Location, Stock, PriceCents, ModifiedTicks) " +
-                $"VALUES ({partId.ParameterName}, {category.ParameterName}, {subcategory.ParameterName}, {name.ParameterName}, {location.ParameterName}, {stock.ParameterName}, {priceCents.ParameterName}, {modifiedTicks.ParameterName})";
+    //        command.CommandText =
+    //            $"INSERT OR REPLACE INTO Parts (PartId, Category, Subcategory, Name, Location, Stock, PriceCents, ModifiedTicks) " +
+    //            $"VALUES ({partId.ParameterName}, {category.ParameterName}, {subcategory.ParameterName}, {name.ParameterName}, {location.ParameterName}, {stock.ParameterName}, {priceCents.ParameterName}, {modifiedTicks.ParameterName})";
 
-            foreach (var part in parts)
-            {
-                partId.Value = part.PartId;
-                category.Value = part.Category;
-                subcategory.Value = part.SubCategory;
-                name.Value = part.Name;
-                location.Value = part.Location;
-                stock.Value = part.Stock;
-                priceCents.Value = part.PriceCents;
-                modifiedTicks.Value = part.ModifiedTicks;
-                command.ExecuteNonQuery();
-            }
+    //        foreach (var part in parts)
+    //        {
+    //            partId.Value = part.PartId;
+    //            category.Value = part.Category;
+    //            subcategory.Value = part.SubCategory;
+    //            name.Value = part.Name;
+    //            location.Value = part.Location;
+    //            stock.Value = part.Stock;
+    //            priceCents.Value = part.PriceCents;
+    //            modifiedTicks.Value = part.ModifiedTicks;
+    //            command.ExecuteNonQuery();
+    //        }
 
-            transaction.Commit();
-        }
+    //        transaction.Commit();
+    //    }
 
-        static DbParameter AddNamedParameter(DbCommand command, string name)
-        {
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = name;
-            command.Parameters.Add(parameter);
-            return parameter;
-        }
-    }
+        //static DbParameter AddNamedParameter(DbCommand command, string name)
+        //{
+        //    var parameter = command.CreateParameter();
+        //    parameter.ParameterName = name;
+        //    command.Parameters.Add(parameter);
+        //    return parameter;
+        //}
+    //}
 }

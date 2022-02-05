@@ -20,11 +20,11 @@ internal class ClientSideDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         #region Part Demo
-        modelBuilder.Entity<Part>().HasIndex(nameof(Part.ModifiedTicks), nameof(Part.PartId));
-        modelBuilder.Entity<Part>().HasIndex(nameof(Part.Category), nameof(Part.SubCategory));
-        modelBuilder.Entity<Part>().HasIndex(x => x.Stock);
-        modelBuilder.Entity<Part>().HasIndex(x => x.Name);
-        modelBuilder.Entity<Part>().Property(x => x.Name).UseCollation("nocase");
+        //modelBuilder.Entity<Part>().HasIndex(nameof(Part.ModifiedTicks), nameof(Part.PartId));
+        //modelBuilder.Entity<Part>().HasIndex(nameof(Part.Category), nameof(Part.SubCategory));
+        //modelBuilder.Entity<Part>().HasIndex(x => x.Stock);
+        //modelBuilder.Entity<Part>().HasIndex(x => x.Name);
+        //modelBuilder.Entity<Part>().Property(x => x.Name).UseCollation("nocase");
         #endregion
 
         #region BGS
@@ -38,7 +38,7 @@ internal class ClientSideDbContext : DbContext
         modelBuilder.Entity<Player>().HasIndex(x => x.Name);
         modelBuilder.Entity<Player>().Property(x => x.Name).UseCollation("nocase");
         modelBuilder.Entity<Player>().HasIndex(x => x.Ranking);
-        modelBuilder.Entity<Player>().HasMany(c => c.Activities);
+        modelBuilder.Entity<Player>().HasOne(c => c.Activity);
         #endregion
     }
 }

@@ -14,6 +14,8 @@
 
         public int Ranking { get; set; }
 
-        public virtual ICollection<Activity> Activities { get; set; }
+        public int Points { get; set; }
+
+        public virtual Activity Activity { get; set; }
     }
 }

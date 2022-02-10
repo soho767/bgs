@@ -14,7 +14,7 @@ jobs:
    # uses GitHub's checkout action to checkout code form the master branch
    - uses: actions/checkout@v2
     
-   # sets up .NET Core SDK 3.1
+   # sets up .NET Core SDK 6.0
    - name: Setup .NET Core SDK
      uses: actions/setup-dotnet@v1
      with:
@@ -22,7 +22,7 @@ jobs:
         
    # publishes Blazor project to the release-folder
    - name: Publish .NET Core Project
-     run: dotnet publish BGS.csproj -c Release -o release --nologo
+     run: dotnet publish BGS\BGS.csproj -c Release -o release --nologo
       
    - name: Commit wwwroot to GitHub Pages
      uses: soho767/bgs@0.1

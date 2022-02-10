@@ -24,6 +24,10 @@ jobs:
    - name: Publish .NET Core Project
      run: dotnet publish BGS\BGS.csproj -c Release -o release --nologo
       
+   # changes the base-tag in index.html from '/' to 'bgs' to match GitHub Pages repository subdirectory
+   - name: Change base-tag in index.html from / to bgs
+     run: sed -i 's/<base href="\/" \/>/<base href="\/bgs\/" \/>/g' release/wwwroot/index.html
+      
    - name: Commit wwwroot to GitHub Pages
      uses: soho767/bgs@0.1
      with:

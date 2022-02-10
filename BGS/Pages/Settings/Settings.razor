@@ -1,8 +1,14 @@
 ﻿@page "/settings"
 
 @using System.IO
+@using BGS.Data
+@using BGS.Data.Entities
+@using BGS.Helper.Json
+@using Microsoft.EntityFrameworkCore
+@using System.Text.Json
+@using System.Net.Http.Headers
 @inject IJSRuntime JS
-@*@inject DataSynchronizer DataSynchronizer*@
+@inject DataSynchronizer DataSynchronizer
 
 <h3>Settings</h3>
 
@@ -15,8 +21,113 @@
 <h4>Load database</h4>
 
 
+<h4>Save as JSON</h4>
+<input type="button" value="SaveAsJson" @onclick="async() => await SaveAsJsonAsync()" />
+
+<h4>Load from JSON</h4>
+<InputFile OnChange="@OnInputFileChange" />
 
 @code {
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        long maxFileSize = 1024 * 1024 * 15; //max 15 MB
+
+        foreach (var file in e.GetMultipleFiles(1))
+        {
+            try
+            {
+                var fileContent =
+                    new StreamContent(file.OpenReadStream(maxFileSize));
+
+                fileContent.Headers.ContentType =
+                    new MediaTypeHeaderValue(file.ContentType);
+
+                var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+                options.Converters.Add(new DateOnlyConverter());
+                options.Converters.Add(new TimeOnlyConverter());
+
+
+                var data = await fileContent.ReadFromJsonAsync<List<Activity>>(options);
+
+                ClearDatabase();
+                ImportData(data);
+            }
+            catch (Exception ex)
+            {
+                //Logger.LogInformation("{FileName} not uploaded (Err: 6): {Message}", file.Name, ex.Message);
+            }
+        }
+    }
+
+
+    private bool ClearDatabase()
+    {
+        db.Database.EnsureDeleted();
+        db.Database.EnsureCreated();
+
+        return true;
+    }
+
+    private bool ImportData(List<Activity> data)
+    {
+        db.Activities.AddRange(data);
+        db.SaveChanges();
+
+        return true;
+    }
+
+
+    ClientSideDbContext? db;
+
+    protected override async Task OnInitializedAsync()
+    {
+        db = await DataSynchronizer.GetPreparedDbContextAsync();
+        DataSynchronizer.OnUpdate += StateHasChanged;
+
+        //DataSynchronizer.GetPreparedDbContextAsync
+    }
+
+    private async Task SaveAsJsonAsync()
+    {
+        if (db is null)
+        {
+            return;
+        }
+
+        var result = db.Activities.Include("Players").AsNoTracking().AsQueryable();
+
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new DateOnlyConverter());
+        options.Converters.Add(new TimeOnlyConverter());
+
+        string dbAsString = System.Text.Json.JsonSerializer.Serialize<List<Activity>>(result.ToList(), options);
+
+        //prepare download
+        using (var file = GenerateStreamFromString(dbAsString))
+        {
+            using var streamRef = new DotNetStreamReference(stream: file);
+
+            //start download
+            await JS.InvokeVoidAsync("downloadFileFromStream", "saving.json", streamRef);
+        }
+    }
+
+    private async Task LoadFromJsonAsync()
+    {
+        //var backToAct = System.Text.Json.JsonSerializer.Deserialize<List<Activity>>(dbAsString, options);
+    }
+
+    private Stream GenerateStreamFromString(string s)
+    {
+        var stream = new MemoryStream();
+        var writer = new StreamWriter(stream);
+        writer.Write(s);
+        writer.Flush();
+        stream.Position = 0;
+        return stream;
+    }
+
     private async Task DownloadFileFromStream()
     {
         var fileName = Data.DataSynchronizer.SqliteDbFilename;
@@ -24,14 +135,14 @@
         //MemoryStream ms = new MemoryStream();
         using (FileStream file = new FileStream(fileName, FileMode.Open, FileAccess.Read))
         {
-        //file.CopyTo(ms);
+            //file.CopyTo(ms);
 
             //var fileStream = GetFileStream();
             //var fileName = Data.DataSynchronizer.SqliteDbFilename;
 
-        using var streamRef = new DotNetStreamReference(stream: file);
+            using var streamRef = new DotNetStreamReference(stream: file);
 
-        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+            await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
         }
     }
 }

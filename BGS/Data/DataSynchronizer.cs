@@ -54,7 +54,7 @@ class DataSynchronizer
         //var x = await db.Database.EnsureDeletedAsync();
 
         //var dbCreationScript = db.Database.GenerateCreateScript();
-        
+
         //Creates the database
         var created = await db.Database.EnsureCreatedAsync();       
     }

@@ -24,7 +24,7 @@
                     db.result.transaction('Files', 'readwrite').objectStore('Files').put(data, 'file');
                 }
             }
-        }, 1000);
+        }, 500); // was 1000
     });
 }
 

@@ -1,4 +1,6 @@
-﻿namespace BGS.Data.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace BGS.Data.Entities
 {
     public partial class Player
     {
@@ -16,6 +18,7 @@
 
         public int Points { get; set; }
 
+        [JsonIgnore]
         public virtual Activity Activity { get; set; }
     }
 }

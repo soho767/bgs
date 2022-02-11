@@ -28,15 +28,15 @@ jobs:
       
    # changes the base-tag in index.html from '/' to 'bgs' to match GitHub Pages repository subdirectory
    - name: Change base-tag in index.html from / to bgs
-     run: sed -i 's/<base href="\/" \/>/<base href="\/bgs\/" \/>/g' BGS/release/wwwroot/index.html
+     run: sed -i 's/<base href="\/" \/>/<base href="\/bgs\/" \/>/g' release/wwwroot/index.html
       
    # add .nojekyll file to tell GitHub pages to not treat this as a Jekyll project. (Allow files and folders starting with an underscore)
    - name: Add .nojekyll file
-     run: touch BGS/release/wwwroot/.nojekyll
+     run: touch release/wwwroot/.nojekyll
       
    - name: Commit wwwroot to GitHub Pages
-     uses: soho767/bgs@0.1
+     uses: JamesIves/github-pages-deploy-action@3.7.1
      with:
        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
        BRANCH: gh-pages
-       FOLDER: BGS/release/wwwroot
+       FOLDER: release/wwwroot

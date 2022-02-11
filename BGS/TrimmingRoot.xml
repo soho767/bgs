@@ -1,0 +1,7 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<linker>
+	<!-- Necessary for NpgSql library -->
+	<assembly fullname="System.Private.CoreLib">
+		<type fullname="System.DateOnly" preserve="all" />
+	</assembly>
+</linker>

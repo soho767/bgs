@@ -20,10 +20,15 @@
 	  <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="6.0.1" />
 	  <PackageReference Include="Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.win-x64" Version="6.0.0" />
 	  <NativeFileReference Include="Data\e_sqlite3.o" />
-	  
   </ItemGroup>
 
-  <ItemGroup>
+	<!--  see: https://github.com/npgsql/efcore.pg/issues/2185#issue-1087758188
+	<ItemGroup>
+		<TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+	</ItemGroup>
+	-->
+
+	<ItemGroup>
     <ProjectReference Include="..\QuickGrid\QuickGrid.csproj" />
   </ItemGroup>
 

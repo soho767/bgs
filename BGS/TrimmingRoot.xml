@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <linker>
-	<!-- Necessary for NpgSql library -->
+	<!-- Necessary for NpgSql library, based on: https://github.com/npgsql/efcore.pg/issues/2185#issue-1087758188 -->
 	<assembly fullname="System.Private.CoreLib">
 		<type fullname="System.DateOnly" preserve="all" />
 	</assembly>

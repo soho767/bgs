@@ -8,22 +8,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     
     <!-- with or without doesn't work -->
-	<PublishTrimmed>true</PublishTrimmed>
+	<PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
 	<PropertyGroup>
 		<WasmBuildNative>true</WasmBuildNative>
 	</PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="Data\ManufacturingDataServices.cs" />
-  </ItemGroup>
   
-  <ItemGroup>
-    <None Include="Data\ManufacturingDataServices.cs">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
+  
 
   <ItemGroup>
     <Resource Include="Data\e_sqlite3.o">
@@ -34,7 +26,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="6.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.NET.Runtime.Emscripten.2.0.23.Sdk.linux-x64" Version="6.0.1" />
 
 	  <!-- EF Core and Sqlite -->
 	  <PackageReference Include="SQLitePCLRaw.Bundle_e_sqlite3" Version="2.0.7" />

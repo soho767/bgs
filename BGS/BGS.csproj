@@ -8,7 +8,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     
     <!-- with or without doesn't work -->
-	<PublishTrimmed>true</PublishTrimmed>
+	<PublishTrimmed>false</PublishTrimmed>
+
+	  <!-- integrity check -->
+	<BlazorCacheBootResources>false</BlazorCacheBootResources>
+
   </PropertyGroup>
 
   <ItemGroup>

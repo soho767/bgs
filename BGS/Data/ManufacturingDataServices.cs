@@ -1,9 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BGS.Data;
 
 public static class ManufacturingDataServices
 {
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+    private static Type _keepDateOnly = typeof(DateOnly);
+
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+    private static Type _keepTimeOnly = typeof(TimeOnly);
+
     //public static void AddManufacturingDataClient(this IServiceCollection serviceCollection, Action<IServiceProvider, ManufacturingDataClientOptions> configure)
     //{
     //    serviceCollection.AddScoped(services =>

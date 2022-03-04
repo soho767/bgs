@@ -1,4 +1,7 @@
-﻿Interressant: https://swimburger.net/blog/dotnet/how-to-deploy-aspnet-blazor-webassembly-to-github-pages & https://swimburger.net/blog/dotnet/how-to-deploy-aspnet-blazor-webassembly-to-azure-static-web-apps
+﻿Publish Error fix: https://developercommunity.visualstudio.com/t/publish-blazor-wasm-with-native-file-reference-sql/1628667
+
+
+Interressant: https://swimburger.net/blog/dotnet/how-to-deploy-aspnet-blazor-webassembly-to-github-pages & https://swimburger.net/blog/dotnet/how-to-deploy-aspnet-blazor-webassembly-to-azure-static-web-apps
 
 Netlify probiert: https://swimburger.net/blog/dotnet/how-to-deploy-blazor-webassembly-to-netlify
 
